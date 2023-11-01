@@ -87,7 +87,7 @@ public class EmployeeController implements IEmployeeController {
     public ResponseEntity<Employee> getEmployeeById(@PathVariable String id) {
         EmployeeResponse response = employeeService.getEmployeeById(id);
         return ResponseEntity.status(Integer.parseInt(response.getStatus()))
-                .body(response.getData() != null && response.getData().size() > 0 ? response.getData().get(0) : null);
+                .body(response.getData() != null && !response.getData().isEmpty() ? response.getData().get(0) : null);
     }
 
     @Operation(summary = "Get the highest salary among all employees")
@@ -143,7 +143,7 @@ public class EmployeeController implements IEmployeeController {
         EmployeeResponse response = employeeService.createEmployee(employeeInput);
 
         return ResponseEntity.status(Integer.parseInt(response.getStatus()))
-                .body(response.getData() != null && response.getData().size() > 0 ? response.getData().get(0) : null);
+                .body(response.getData() != null && !response.getData().isEmpty() ? response.getData().get(0) : null);
     }
 
     @Operation(summary = "Delete an employee by ID")

@@ -249,9 +249,9 @@ class RqChallengeApplicationTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(employeeJson))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.employee_name").value(newEmployee.getEmployee_name()))
-                .andExpect(jsonPath("$.employee_salary").value(newEmployee.getEmployee_salary()))
-                .andExpect(jsonPath("$.employee_age").value(newEmployee.getEmployee_age()));
+                .andExpect(jsonPath("$.employee_name").value(newEmployee.getEmployeeName()))
+                .andExpect(jsonPath("$.employee_salary").value(newEmployee.getEmployeeSalary()))
+                .andExpect(jsonPath("$.employee_age").value(newEmployee.getEmployeeAge()));
     }
 
     @Test

@@ -26,6 +26,9 @@ public class EmployeeService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmployeeService.class);
     private static final String CACHE_KEY_ALL_EMPLOYEES = "allEmployees";
+    public static final String SUCCESS = "success";
+    public static final String NO_EMPLOYEES_FOUND = "No employees found";
+    public static final String SALARY = "salary";
     private final RestTemplate restTemplate;
     private final CacheManager cacheManager;
     private final String externalApiUrl;
@@ -62,7 +65,7 @@ public class EmployeeService {
     }
 
     private EmployeeResponse processEmployeeApiResponse(EmployeeResponse response) {
-        if ("success".equals(response.getStatus())) {
+        if (SUCCESS.equals(response.getStatus())) {
             cacheData(CACHE_KEY_ALL_EMPLOYEES, response.getData());
             return response;
         }
@@ -99,15 +102,15 @@ public class EmployeeService {
      */
     public EmployeeResponse getFilteredEmployees(String searchString, List<Employee> allEmployees) {
         if (allEmployees.isEmpty()) {
-            return new EmployeeResponse("404", Collections.emptyList(), "No employees found");
+            return new EmployeeResponse("404", Collections.emptyList(), NO_EMPLOYEES_FOUND);
         }
         String lowerCaseSearchString = searchString.toLowerCase();
         List<Employee> filteredEmployees = allEmployees.stream()
-                .filter(employee -> employee.getEmployee_name().toLowerCase().contains(lowerCaseSearchString))
+                .filter(employee -> employee.getEmployeeName().toLowerCase().contains(lowerCaseSearchString))
                 .collect(Collectors.toList());
 
         return filteredEmployees.isEmpty()
-                ? new EmployeeResponse("404", Collections.emptyList(), "No employees found")
+                ? new EmployeeResponse("404", Collections.emptyList(), NO_EMPLOYEES_FOUND)
                 : new EmployeeResponse("200", filteredEmployees, "Employees found");
     }
 
@@ -119,17 +122,17 @@ public class EmployeeService {
      */
     public EmployeeResponse getTopTenNames(List<Employee> allEmployees) {
         if (allEmployees.isEmpty()) {
-            return new EmployeeResponse("404", Collections.emptyList(), "No employees found");
+            return new EmployeeResponse("404", Collections.emptyList(), NO_EMPLOYEES_FOUND);
         }
 
         List<String> topTenNames = allEmployees.stream()
-                .sorted(Comparator.comparingInt(employee -> -Integer.parseInt(employee.getEmployee_salary())))
+                .sorted(Comparator.comparingInt(employee -> -Integer.parseInt(employee.getEmployeeSalary())))
                 .limit(10)
-                .map(Employee::getEmployee_name)
+                .map(Employee::getEmployeeName)
                 .collect(Collectors.toList());
 
         return topTenNames.isEmpty()
-                ? new EmployeeResponse("404", Collections.emptyList(), "No employees found")
+                ? new EmployeeResponse("404", Collections.emptyList(), NO_EMPLOYEES_FOUND)
                 : new EmployeeResponse("200", null, topTenNames.toString());
     }
 
@@ -141,11 +144,11 @@ public class EmployeeService {
      */
     public EmployeeResponse filterHighestSalary(List<Employee> allEmployees) {
         Optional<Integer> highestSalary = allEmployees.stream()
-                .map(employee -> Integer.parseInt(employee.getEmployee_salary()))
+                .map(employee -> Integer.parseInt(employee.getEmployeeSalary()))
                 .max(Integer::compare);
 
         return highestSalary.map(salary -> new EmployeeResponse("200", null, salary.toString()))
-                .orElseGet(() -> new EmployeeResponse("404", Collections.emptyList(), "No employees found"));
+                .orElseGet(() -> new EmployeeResponse("404", Collections.emptyList(), NO_EMPLOYEES_FOUND));
     }
 
     /**
@@ -166,7 +169,7 @@ public class EmployeeService {
     private EmployeeResponse processResponseById(String id, ResponseEntity<EmployeeResponse> response) {
         if (response.getStatusCode() == HttpStatus.OK) {
             EmployeeResponse employeeResponse = response.getBody();
-            if (employeeResponse != null && "success".equals(employeeResponse.getStatus()) && employeeResponse.getData().size() == 1) {
+            if (employeeResponse != null && SUCCESS.equals(employeeResponse.getStatus()) && employeeResponse.getData().size() == 1) {
                 return employeeResponse;
             }
             return new EmployeeResponse("500", Collections.emptyList(), "More than one employee found with ID");
@@ -194,7 +197,7 @@ public class EmployeeService {
     private ResponseEntity<Object> sendCreateEmployeeRequest(Map<String, Object> employeeInput) {
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
         requestBody.add("name", (String) employeeInput.get("name"));
-        requestBody.add("salary", (String) employeeInput.get("salary"));
+        requestBody.add(SALARY, (String) employeeInput.get(SALARY));
         requestBody.add("age", (String) employeeInput.get("age"));
 
         HttpHeaders headers = new HttpHeaders();
@@ -218,7 +221,7 @@ public class EmployeeService {
                 Map<String, Object> responseBody = mapper.convertValue(response.getBody(), new TypeReference<>() {});
 
                 // Extract and process the data
-                if ("success".equals(responseBody.get("status"))) {
+                if (SUCCESS.equals(responseBody.get("status"))) {
                     Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
                     if (data != null) {
                         Employee createdEmployee = convertMapToEmployee(data);
@@ -237,19 +240,19 @@ public class EmployeeService {
         Employee employee = new Employee();
 
         if (data.containsKey("name")) {
-            employee.setEmployee_name((String) data.get("name"));
+            employee.setEmployeeName((String) data.get("name"));
         }
-        if (data.containsKey("salary")) {
-            employee.setEmployee_salary((String) data.get("salary"));
+        if (data.containsKey(SALARY)) {
+            employee.setEmployeeSalary((String) data.get(SALARY));
         }
         if (data.containsKey("age")) {
-            employee.setEmployee_age(String.valueOf(data.get("age")));
+            employee.setEmployeeAge(String.valueOf(data.get("age")));
         }
         if (data.containsKey("id")) {
             employee.setId(String.valueOf(data.get("id")));
         }
 
-        employee.setProfile_image("");
+        employee.setProfileImage("");
 
         return employee;
     }

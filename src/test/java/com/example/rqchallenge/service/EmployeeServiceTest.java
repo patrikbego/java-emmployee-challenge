@@ -171,7 +171,7 @@ public class EmployeeServiceTest {
         assertEquals("201", result.getStatus());
         assertNotNull(result.getData());
         assertEquals(1, result.getData().size());
-        assertEquals("John Doe", result.getData().get(0).getEmployee_name());
+        assertEquals("John Doe", result.getData().get(0).getEmployeeName());
     }
 
     @Test

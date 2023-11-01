@@ -2,6 +2,8 @@ plugins {
     id 'org.springframework.boot' version '2.6.1'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
+    id 'jacoco'
+    id "org.sonarqube" version "4.0.0.2929"
 }
 
 group = 'com.example'
@@ -21,6 +23,31 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
+sonarqube {
+    properties {
+        property "sonar.projectKey", "employee-rest-api"
+        property "sonar.projectName", "Employee REST api"
+        property "sonar.projectVersion", "1.0"
+        property "sonar.sources", "src/main"
+        property "sonar.tests", "src/test"
+        property "sonar.java.binaries", "build/classes/java/main"
+        property "sonar.java.test.binaries", "build/classes/java/test"
+        property "sonar.host.url", "http://localhost:9000" // URL of your SonarQube server
+        property "sonar.login", "1d82559f0d746e44278e6124e53f5574a3ed35b5" // Token generated in Step 2
+        property "sonar.jacoco.reportPaths", "${buildDir}/jacoco/test.exec"
+    }
+}
+
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        html.required = true // Enable HTML report
+        xml.required = true
+        csv.required = false
+    }
 }
