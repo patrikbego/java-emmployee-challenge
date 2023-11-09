@@ -1,5 +1,6 @@
 package com.example.rqchallenge;
 
+import com.example.rqchallenge.controller.EmployeeExtController;
 import com.example.rqchallenge.model.Employee;
 import com.example.rqchallenge.model.EmployeeResponse;
 import com.example.rqchallenge.service.EmployeeService;
@@ -33,6 +34,9 @@ class RqChallengeApplicationTests {
 
     @MockBean
     private EmployeeService employeeService;
+
+    @MockBean
+    private EmployeeExtController employeeExtController;
 
     private List<Employee> employees;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -85,7 +89,7 @@ class RqChallengeApplicationTests {
 
         given(employeeService.getAllCachedEmployees()).willReturn(mockEmployees);
         given(employeeService.getFilteredEmployees(eq(searchString), anyList()))
-                .willReturn(new EmployeeResponse("success", mockEmployees, null));
+                .willReturn(mockEmployees);
 
         mockMvc.perform(get("/api/v1/employee/search/" + searchString))
                 .andExpect(status().isOk())
@@ -101,7 +105,7 @@ class RqChallengeApplicationTests {
 
         given(employeeService.getAllCachedEmployees()).willReturn(emptyList);
         given(employeeService.getFilteredEmployees(eq(searchString), anyList()))
-                .willReturn(new EmployeeResponse("success", emptyList, null));
+                .willReturn(emptyList);
 
         mockMvc.perform(get("/api/v1/employee/search/" + searchString))
                 .andExpect(status().isNotFound());
@@ -123,7 +127,7 @@ class RqChallengeApplicationTests {
         String employeeId = "123";
         Employee employee = new Employee("123", "John Doe", "60000", "30", "1");
 
-        given(employeeService.getEmployeeById(employeeId)).willReturn(new EmployeeResponse("200", List.of(employee), null));
+        given(employeeExtController.getEmployeeById(employeeId)).willReturn(new EmployeeResponse("200", List.of(employee), null));
 
         mockMvc.perform(get("/api/v1/employee/" + employeeId))
                 .andExpect(status().isOk())
@@ -136,7 +140,7 @@ class RqChallengeApplicationTests {
         String employeeId = "unknown_id";
         EmployeeResponse mockResponse = new EmployeeResponse("404", Collections.emptyList(), null);
 
-        given(employeeService.getEmployeeById(employeeId)).willReturn(mockResponse);
+        given(employeeExtController.getEmployeeById(employeeId)).willReturn(mockResponse);
 
         mockMvc.perform(get("/api/v1/employee/" + employeeId))
                 .andExpect(status().isNotFound());
@@ -145,7 +149,7 @@ class RqChallengeApplicationTests {
     @Test
     public void getEmployeeById_ServerError() throws Exception {
         String employeeId = "3";
-        given(employeeService.getEmployeeById(employeeId)).willReturn(new EmployeeResponse("500", Collections.emptyList(), null));
+        given(employeeExtController.getEmployeeById(employeeId)).willReturn(new EmployeeResponse("500", Collections.emptyList(), null));
 
         mockMvc.perform(get("/api/v1/employee/" + employeeId))
                 .andExpect(status().isInternalServerError());
@@ -159,7 +163,7 @@ class RqChallengeApplicationTests {
         mockResponse.setMessage("80000");
 
         given(employeeService.getAllCachedEmployees()).willReturn(employees);
-        given(employeeService.filterHighestSalary(employees)).willReturn(mockResponse);
+        given(employeeService.filterHighestSalary(employees)).willReturn(Optional.of(80000));
 
         // Perform the request and assert the results
         mockMvc.perform(get("/api/v1/employee/highestSalary"))
@@ -195,7 +199,7 @@ class RqChallengeApplicationTests {
         mockResponse.setMessage("Alice,Bob,Charlie");
 
         given(employeeService.getAllCachedEmployees()).willReturn(employees);
-        given(employeeService.getTopTenNames(employees)).willReturn(mockResponse);
+        given(employeeService.getTopTenNames(employees)).willReturn(Arrays.asList("Alice,Bob,Charlie".split(",")));
 
         // Perform request and assert results
         mockMvc.perform(get("/api/v1/employee/topTenHighestEarningEmployeeNames"))
@@ -239,7 +243,7 @@ class RqChallengeApplicationTests {
         mockResponse.setData(Collections.singletonList(newEmployee));
 
         // Mock the service call
-        given(employeeService.createEmployee(employeeInput)).willReturn(mockResponse);
+        given(employeeExtController.createEmployee(employeeInput)).willReturn(mockResponse);
 
         // Convert employeeInput to JSON
         String employeeJson = objectMapper.writeValueAsString(employeeInput);
@@ -264,7 +268,7 @@ class RqChallengeApplicationTests {
 
         // Force an exception when the service method is called
         EmployeeResponse mockResponse = new EmployeeResponse("500", Collections.emptyList(), null);
-        given(employeeService.createEmployee(employeeInput)).willReturn(mockResponse);
+        given(employeeExtController.createEmployee(employeeInput)).willReturn(mockResponse);
 
         // Convert employeeInput to JSON
         String employeeJson = objectMapper.writeValueAsString(employeeInput);
@@ -283,7 +287,7 @@ class RqChallengeApplicationTests {
         mockResponse.setStatus("200");
         mockResponse.setMessage("Employee deleted successfully");
 
-        given(employeeService.deleteEmployeeById(employeeId)).willReturn(mockResponse);
+        given(employeeExtController.deleteEmployeeById(employeeId)).willReturn(mockResponse);
 
         mockMvc.perform(delete("/api/v1/employee/" + employeeId))
                 .andExpect(status().isOk())
@@ -297,7 +301,7 @@ class RqChallengeApplicationTests {
         mockResponse.setStatus("404");
         mockResponse.setMessage("Employee not found");
 
-        given(employeeService.deleteEmployeeById(employeeId)).willReturn(mockResponse);
+        given(employeeExtController.deleteEmployeeById(employeeId)).willReturn(mockResponse);
 
         mockMvc.perform(delete("/api/v1/employee/" + employeeId))
                 .andExpect(status().isNotFound())
@@ -308,7 +312,7 @@ class RqChallengeApplicationTests {
     public void deleteEmployeeById_InternalServerError() throws Exception {
         String employeeId = "1";
 
-        given(employeeService.deleteEmployeeById(employeeId)).willReturn(new EmployeeResponse("500", Collections.emptyList(), null));
+        given(employeeExtController.deleteEmployeeById(employeeId)).willReturn(new EmployeeResponse("500", Collections.emptyList(), null));
 
         mockMvc.perform(delete("/api/v1/employee/" + employeeId))
                 .andExpect(status().isInternalServerError());

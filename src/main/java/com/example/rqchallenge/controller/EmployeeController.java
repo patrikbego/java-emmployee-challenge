@@ -14,9 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping(value = "api/v1/employee")
@@ -25,17 +23,19 @@ public class EmployeeController implements IEmployeeController {
     private final Logger logger = LoggerFactory.getLogger(EmployeeController.class);
 
     private final EmployeeService employeeService;
+    private final EmployeeExtController employeeExtController;
 
     @Autowired
-    public EmployeeController(EmployeeService employeeService) {
+    public EmployeeController(EmployeeService employeeService, EmployeeExtController employeeExtController) {
         this.employeeService = employeeService;
+        this.employeeExtController = employeeExtController;
     }
 
     @Cacheable("employeeCache")
     @Operation(summary = "Get a list of all employees")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "List of all employees"),
-            @ApiResponse(responseCode = "404", description = "No employees found"),
+            @ApiResponse(responseCode = "204", description = "No employees found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<List<Employee>> getAllEmployees() {
@@ -64,8 +64,12 @@ public class EmployeeController implements IEmployeeController {
     public ResponseEntity<List<Employee>> getEmployeesByNameSearch(@PathVariable String searchString) {
         try {
             List<Employee> allEmployees = employeeService.getAllCachedEmployees();
-            List<Employee> filteredEmployees = employeeService.getFilteredEmployees(searchString, allEmployees).getData();
+            if(allEmployees.isEmpty()) {
+                logger.warn("Cache returned an empty list of employees.");
+                return ResponseEntity.notFound().build();
+            }
 
+            List<Employee> filteredEmployees = employeeService.getFilteredEmployees(searchString, allEmployees);
             if (filteredEmployees.isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
@@ -85,7 +89,7 @@ public class EmployeeController implements IEmployeeController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<Employee> getEmployeeById(@PathVariable String id) {
-        EmployeeResponse response = employeeService.getEmployeeById(id);
+        EmployeeResponse response = employeeExtController.getEmployeeById(id);
         return ResponseEntity.status(Integer.parseInt(response.getStatus()))
                 .body(response.getData() != null && !response.getData().isEmpty() ? response.getData().get(0) : null);
     }
@@ -99,12 +103,14 @@ public class EmployeeController implements IEmployeeController {
     public ResponseEntity<Integer> getHighestSalaryOfEmployees() {
         try {
             List<Employee> allEmployees = employeeService.getAllCachedEmployees();
-            EmployeeResponse response = employeeService.filterHighestSalary(allEmployees);
-
-            if (response == null
-                    || (response.getStatus().equals("200") && response.getMessage().isEmpty())) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            if(allEmployees.isEmpty()) {
+                logger.warn("Cache returned an empty list of employees.");
+                return ResponseEntity.notFound().build();
             }
+            Optional<Integer> highestSalaryOptional = employeeService.filterHighestSalary(allEmployees);
+
+            EmployeeResponse response = highestSalaryOptional.map(salary -> new EmployeeResponse("200", null, salary.toString()))
+                    .orElseGet(() -> new EmployeeResponse("404", Collections.emptyList(), "No employees found"));
 
             return ResponseEntity.ok(Integer.parseInt(response.getMessage()));
         } catch (Exception e) {
@@ -122,13 +128,18 @@ public class EmployeeController implements IEmployeeController {
     public ResponseEntity<List<String>> getTopTenHighestEarningEmployeeNames() {
         try {
             List<Employee> allEmployees = employeeService.getAllCachedEmployees();
-            EmployeeResponse response = employeeService.getTopTenNames(allEmployees);
-
-            if (response == null || response.getStatus().equals("204")) {
+            if(allEmployees.isEmpty()) {
+                logger.warn("Cache returned an empty list of employees.");
                 return ResponseEntity.notFound().build();
             }
 
-            return ResponseEntity.ok(Arrays.asList(response.getMessage().split(",")));
+            List<String> names = employeeService.getTopTenNames(allEmployees);
+
+            if (names == null || names.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.ok(Arrays.asList(names.toString().split(",")));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -137,10 +148,11 @@ public class EmployeeController implements IEmployeeController {
     @Operation(summary = "Create a new employee")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Employee created successfully"),
+            @ApiResponse(responseCode = "400", description = "Bad request"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<Employee> createEmployee(Map<String, Object> employeeInput) {
-        EmployeeResponse response = employeeService.createEmployee(employeeInput);
+        EmployeeResponse response = employeeExtController.createEmployee(employeeInput);
 
         return ResponseEntity.status(Integer.parseInt(response.getStatus()))
                 .body(response.getData() != null && !response.getData().isEmpty() ? response.getData().get(0) : null);
@@ -153,7 +165,7 @@ public class EmployeeController implements IEmployeeController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public ResponseEntity<String> deleteEmployeeById(@PathVariable String id) {
-        EmployeeResponse response = employeeService.deleteEmployeeById(id);
+        EmployeeResponse response = employeeExtController.deleteEmployeeById(id);
         return ResponseEntity.status(Integer.parseInt(response.getStatus())).body(response.getMessage());
     }
 

@@ -1,118 +1,25 @@
-# Coding Challenge
+# Employee Management API
 
-### In this assessment you will be tasked with filling out the functionality of different methods that will be listed further down.
-These methods will require some level of api interactions with the following base url: https://dummy.restapiexample.com.
-Please keep the following in mind when doing this assessment: clean coding practices, test driven development, logging, and scalability.
-If you are unable to successfully receive responses from the endpoints, mocking the response calls may prove to be helpful.
+## Project Overview
+This is a mock API project that uses REST to REST communication to manage employee data. 
 
-### Endpoints to implement
+## Tech Stack
+This is a Gradle project built with Spring Boot. It uses Caffeine for caching and OpenAPI for API documentation.
 
-getAllEmployees()
+## Project Structure
+The project is structured into three main layers:
+- Controller Layer: Handles HTTP requests and responses. Located in `src/main/java/com/example/rqchallenge/controller/`.
+- Service Layer: Contains business logic. Located in `src/main/java/com/example/rqchallenge/service/`.
+- Model Layer: Defines the data models. Located in `src/main/java/com/example/rqchallenge/model/`.
 
-    output - list of employees
-    description - this should return all employees
+## How to Run
+To run the project locally, follow these steps:
+1. Clone the repository to your local machine.
+2. Navigate to the project directory in your terminal.
+3. Run the command `./gradlew bootRun`.
 
-getEmployeesByNameSearch()
+## Caching
+The project uses Caffeine for caching. Caching is set up in the `EmployeeService` class, where the `@Cacheable` annotation is used to cache the result of the `getAllCachedEmployees` method.
 
-    output - list of employees
-    description - this should return all employees whose name contains or matches the string input provided
-
-getEmployeeById(string id)
-
-    output - employee
-    description - this should return a single employee
-
-getHighestSalaryOfEmployees()
-
-    output - integer of the highest salary
-    description -  this should return a single integer indicating the highest salary of all employees
-
-getTop10HighestEarningEmployeeNames()
-
-    output - list of employees
-    description -  this should return a list of the top 10 employees based off of their salaries
-
-createEmployee(string name, string salary, string age)
-
-    output - string of the status (i.e. success)
-    description -  this should return a status of success or failed based on if an employee was created
-
-deleteEmployee(String id)
-
-    output - the name of the employee that was deleted
-    description - this should delete the employee with specified id given
-
-### External endpoints from base url
-#### This section will outline all available endpoints and their request and response models from https://dummy.restapiexample.com
-/employees
-
-    request:
-        method: GET
-        parameters: n/a
-        full route: https://dummy.restapiexample.com/api/v1/employees
-    response:
-        {
-            "status": "success",
-            "data": [
-                {
-                "id": "1",
-                "employee_name": "Tiger Nixon",
-                "employee_salary": "320800",
-                "employee_age": "61",
-                "profile_image": ""
-                },
-                ....
-            ]
-        }
-
-/employee/{id}
-
-    request:
-        method: GET
-        parameters: 
-            id (String)
-        full route: https://dummy.restapiexample.com/api/v1/employee/{id}
-    response: 
-        {
-            "status": "success",
-            "data": {
-                "id": "1",
-                "employee_name": "Foo Bar",
-                "employee_salary": "320800",
-                "employee_age": "61",
-                "profile_image": ""
-            }
-        }
-
-/create
-
-    request:
-        method: POST
-        parameters: 
-            name (String),
-            salary (String),
-            age (String)
-        full route: https://dummy.restapiexample.com/api/v1/create
-    response:
-        {
-            "status": "success",
-            "data": {
-                "name": "test",
-                "salary": "123",
-                "age": "23",
-                "id": 25
-            }
-        }
-
-/delete/{id}
-
-    request:
-        method: DELETE
-        parameters:
-            id (String)
-        full route: https://dummy.restapiexample.com/api/v1/delete/{id}
-    response:
-        {
-            "status": "success",
-            "message": "successfully! deleted Record"
-        }
+## API Documentation
+The project uses OpenAPI for API documentation. You can access the API documentation at `http://localhost:8080/swagger-ui.html` when the application is running.
